@@ -1,19 +1,22 @@
 import React, { useEffect, useRef, useState } from "react";
 import style from "./MultiSelect.module.css";
 
-interface MultiSelectSimpleProps {
-  options: string[];
-  onChange: (selectedOptions: string[]) => void;
-  value?: string[];
+interface MultiSelectSimpleProps<T> {
+  options: T[];
+  onChange: (selectedOptions: T[]) => void;
+  value: T[];
+  getOptionLabel: (option: T) => string;
+  getOptionValue: (option: T) => string | number;
 }
 
-const MultiSelect: React.FC<MultiSelectSimpleProps> = ({
+const MultiSelect = <T,>({
   options,
   onChange,
-  value = [],
-}) => {
+  value,
+  getOptionLabel,
+  getOptionValue
+}: MultiSelectSimpleProps<T>) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [selectedOptions, setSelectedOptions] = useState<string[]>(value);
 
   const multiSelectRef = useRef<HTMLDivElement>(null);
 
@@ -21,17 +24,14 @@ const MultiSelect: React.FC<MultiSelectSimpleProps> = ({
     setIsOpen(!isOpen);
   };
 
-  const toggleOption = (option: string) => {
-    const updatedOptions = selectedOptions.includes(option)
-      ? selectedOptions.filter((item) => item !== option)
-      : [...selectedOptions, option];
-    setSelectedOptions(updatedOptions);
+  const toggleOption = (option: T) => {
+    const optionValue = getOptionValue(option);
+    const updatedOptions = value.some(selectedOption => optionValue === getOptionValue(selectedOption))
+      ? value.filter((selectedOption) => getOptionValue(selectedOption) !== optionValue)
+      : [...value, option];
     onChange(updatedOptions);
   };
 
-  useEffect(() => {
-    setSelectedOptions(value);
-  }, [value]);
 
   const handleClickOutside = (event: MouseEvent): void => {
     if (!multiSelectRef.current?.contains(event.target as Node)) {
@@ -68,15 +68,15 @@ const MultiSelect: React.FC<MultiSelectSimpleProps> = ({
       {isOpen && (
         <div className={style.selectOptions}>
           {options.map((item) => (
-            <label key={item} className={style.option} htmlFor={item}>
+            <label key={getOptionValue(item).toString()} className={style.option} htmlFor={getOptionValue(item).toString()}>
               <input
-                id={item}
+                id={getOptionValue(item).toString()}
                 type="checkbox"
-                value={item}
-                checked={selectedOptions.includes(item)}
+                value={getOptionValue(item)}
+                checked={value.some((selectedOption) => getOptionValue(selectedOption) === getOptionValue(item))}
                 onChange={() => toggleOption(item)}
               />
-              {item}
+              {getOptionValue(item).toString()}  {getOptionLabel(item)}
             </label>
           ))}
         </div>
